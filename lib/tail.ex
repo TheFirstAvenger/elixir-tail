@@ -38,40 +38,44 @@ defmodule Tail do
 	"""
 	def init({file, fun, interval}) do
 		GenServer.cast(self, :check)
-    {:ok, {file, fun, interval, 0}}
+    {:ok, {file, fun, interval, nil, 0}}
 	end
 
 	@doc """
 	Main loop. Calls check_for_lines, sleeps, then continues the loop by casting :check to self
-	and returning with the (possibly updated) position
+	and returning with the (possibly updated) last_modified and position
 	"""
-	def handle_cast(:check, {file, fun, interval, position}) do
-		position = check_for_lines(file, fun, position)
+	def handle_cast(:check, {file, fun, interval, last_modified, position}) do
+		{last_modified, position} = check_for_lines(file, fun, last_modified, position)
 		:timer.sleep(interval)
 		GenServer.cast(self, :check)
-    {:noreply, {file, fun, interval, position}}
+    {:noreply, {file, fun, interval, last_modified, position}}
 	end
 
 	@doc """
 	Handles :kill call. Checks for any final lines before stopping the genserver
 	"""
-	def handle_call(:kill, _from, {file, fun, interval, position}) do
-		position = check_for_lines(file, fun, position)
-    {:stop, :normal, {file, fun, interval, position}}
+	def handle_call(:kill, _from, {file, fun, interval, last_modified, position}) do
+		position = check_for_lines(file, fun, last_modified, position)
+    {:stop, :normal, {file, fun, interval, last_modified, position}}
 	end
 
-	#Crude implementation of line checking. Stream.drop(position) skips lines previously read, then Enum.each applies
-	#the specified function to each line. Enum.count returns the new position. If the file doesn't exist, it simply returns
-	#the given position, assuming the file will appear eventually.
-	defp check_for_lines(file, fun, position) do
-		if !File.exists?(file) do
-			position
-		else
-			stream = File.stream!(file)
-			stream
-			|> Stream.drop(position)
-			|> Enum.each(&fun.(&1))
-			Enum.count(stream)
+	#Crude implementation of line checking. If the file doesn't exist, it simply returns the current state, assuming the
+	#file will appear eventually. If the file hasn't been modified since last time, it also returns the current state.
+	#If the file has been modified, Stream.drop(position) skips lines previously read, then Enum.each applies the
+	#specified function to each line. Returns the new last_modified and position (Enum.count). 
+	defp check_for_lines(file, fun, last_modified, position) do
+		cond do
+			!File.exists?(file) ->
+				{last_modified, position}
+			File.stat!(file).mtime == last_modified ->
+				{last_modified, position}
+			true ->
+				stream = File.stream!(file)
+				stream
+				|> Stream.drop(position)
+				|> Enum.each(&fun.(&1))
+				{File.stat!(file).mtime, Enum.count(stream)}
 		end
 	end
 end

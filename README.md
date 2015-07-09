@@ -8,9 +8,9 @@ and continue checking for additional lines on the interval.
 
 ## Usage
 
-{:ok, pid} = Tail.start_link("test.txt", &IO.inspect(&1), 1000)
+    {:ok, pid} = Tail.start_link("test.txt", &IO.inspect(&1), 1000)
 
-Tail.stop(pid)
+    Tail.stop(pid)
 
 ## Notes
 Note that Tail's current crude implementation scans the entire file twice on each interval.

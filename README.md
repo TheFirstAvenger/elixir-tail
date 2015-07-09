@@ -9,6 +9,7 @@ and continue checking for additional lines on the interval.
 ## Usage
 
 {:ok, pid} = Tail.start_link("test.txt", &IO.inspect(&1), 1000)
+
 Tail.stop(pid)
 
 ## Notes

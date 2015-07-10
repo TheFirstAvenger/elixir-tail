@@ -54,7 +54,7 @@ defmodule Tail do
 	"""
 	def handle_call(:kill, _from, {file, fun, interval, last_modified, position}) do
 		position = check_for_lines(file, fun, last_modified, position)
-    {:stop, :normal, {file, fun, interval, last_modified, position}}
+    {:stop, :normal, :ok, {file, fun, interval, last_modified, position}}
 	end
 
 	#Crude implementation of line checking. If the file doesn't exist, it simply returns the current state, assuming the

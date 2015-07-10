@@ -13,4 +13,4 @@ and continue checking for additional lines on the interval.
     Tail.stop(pid)
 
 ## Notes
-Note that Tail's current crude implementation scans the entire file twice on each interval.
+Note that Tail's current implementation scans the entire file twice whenever the modfified time on the file changes.

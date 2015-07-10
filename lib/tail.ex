@@ -11,9 +11,6 @@ defmodule Tail do
 
 	{:ok, pid} = Tail.start_link("test.txt", &IO.inspect(&1), 1000)
 	Tail.stop(pid)
-
-	## Notes
-	Note that Tail's current crude implementation scans the entire file twice on each interval.
 	"""
 
 	use GenServer

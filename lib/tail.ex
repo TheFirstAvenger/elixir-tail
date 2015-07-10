@@ -19,7 +19,7 @@ defmodule Tail do
 	@doc """
 	Public interface. Starts a Tail Genserver for the given file, function, and interval
 	"""
-	def start_link(file, fun, interval) do
+	def start_link(file, fun, interval \\ 1000) do
 		GenServer.start_link(__MODULE__, {file, fun, interval})
 	end
 

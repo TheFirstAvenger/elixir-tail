@@ -32,31 +32,30 @@ defmodule TailTest do
   end
 
   test "tail a file still being appended to" do
-    file = File.open!(@path, [:write])
     output = ["A\n", "B\n", "C\n", "D\n", "E\n", "F\n", "G\n"]
 
     {:ok, agent_pid} = Agent.start(fn -> [] end)
 
     {:ok, pid} = Tail.start_link(@path, fn output ->
       Agent.update(agent_pid, fn state -> state ++ [output] end)
-    end)
+    end, 220)
 
-    IO.write(file, Enum.at(output, 0))
+    File.write(@path, Enum.at(output, 0))
     :timer.sleep(1000)
 
     assert Agent.get(agent_pid, &(&1)) == Enum.take(output, 1)
 
-    IO.write(file, Enum.at(output, 1))
+    File.write(@path, Enum.at(output, 1))
     :timer.sleep(1000)
 
     assert Agent.get(agent_pid, &(&1)) == Enum.take(output, 2)
 
-    IO.write(file, Enum.at(output, 2))
+    File.write(@path, Enum.at(output, 2))
     :timer.sleep(1000)
 
     assert Agent.get(agent_pid, &(&1)) == Enum.take(output, 3)
 
-    IO.write(file, Enum.at(output, 3))
+    File.write(@path, Enum.at(output, 3))
     :timer.sleep(1000)
 
     assert Agent.get(agent_pid, &(&1)) == Enum.take(output, 4)

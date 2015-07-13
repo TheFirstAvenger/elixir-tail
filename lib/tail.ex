@@ -58,10 +58,10 @@ defmodule Tail do
     {:stop, :normal, :ok, {stream, fun, interval, last_modified, position}}
 	end
 
-	#Crude implementation of line checking. If the file doesn't exist, it simply returns the current state, assuming the
+	#Implementation of line checking. If the file doesn't exist, it simply returns the current state, assuming the
 	#file will appear eventually. If the file hasn't been modified since last time, it also returns the current state.
-	#If the file has been modified, Stream.drop(position) skips lines previously read, then Enum.each applies the
-	#specified function to each line. Returns the new last_modified and position (Enum.count). 
+	#If the file has been modified, Stream.drop(position) skips lines previously read, then Enum.each gathers the new lines.
+	#Returns the new last_modified and position. 
 	defp check_for_lines(stream, fun, last_modified, position) do
 		cond do
 			!File.exists?(stream.path) ->
@@ -69,10 +69,13 @@ defmodule Tail do
 			File.stat!(stream.path).mtime == last_modified ->
 				{last_modified, position}
 			true ->
-				stream
+				lines = stream
 				|> Stream.drop(position)
-				|> Enum.each(&fun.(&1))
-				{File.stat!(stream.path).mtime, Enum.count(stream)}
+				|> Enum.into([])
+				if (length(lines) > 0) do
+					fun.(lines)
+				end
+				{File.stat!(stream.path).mtime, position + length(lines)}
 		end
 	end
 end

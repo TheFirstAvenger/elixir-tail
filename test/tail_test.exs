@@ -3,7 +3,7 @@ defmodule TailTest do
 
   @path "testfile"
 
-  setup_all do
+  setup do
     on_exit fn ->
       File.rm(@path)
     end

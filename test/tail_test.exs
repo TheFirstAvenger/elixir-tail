@@ -26,7 +26,7 @@ defmodule TailTest do
 
     output = Task.await(task)
 
-    assert output == text
+    assert output == [text]
 
     Tail.stop(pid)
   end
@@ -37,28 +37,29 @@ defmodule TailTest do
     {:ok, agent_pid} = Agent.start(fn -> [] end)
 
     {:ok, pid} = Tail.start_link(@path, fn output ->
-      Agent.update(agent_pid, fn state -> state ++ [output] end)
+      Agent.update(agent_pid, fn state -> state ++ output end)
     end, 220)
 
-    File.write(@path, Enum.at(output, 0))
+    File.write(@path, Enum.at(output, 0), [:append])
     :timer.sleep(1000)
 
     assert Agent.get(agent_pid, &(&1)) == Enum.take(output, 1)
 
-    File.write(@path, Enum.at(output, 1))
+    File.write(@path, Enum.at(output, 1), [:append])
     :timer.sleep(1000)
 
     assert Agent.get(agent_pid, &(&1)) == Enum.take(output, 2)
 
-    File.write(@path, Enum.at(output, 2))
+    File.write(@path, Enum.at(output, 2), [:append])
     :timer.sleep(1000)
 
     assert Agent.get(agent_pid, &(&1)) == Enum.take(output, 3)
 
-    File.write(@path, Enum.at(output, 3))
+    File.write(@path, Enum.at(output, 3), [:append])
+    File.write(@path, Enum.at(output, 4), [:append])
     :timer.sleep(1000)
 
-    assert Agent.get(agent_pid, &(&1)) == Enum.take(output, 4)
+    assert Agent.get(agent_pid, &(&1)) == Enum.take(output, 5)
 
     Tail.stop(pid)
   end

@@ -15,12 +15,12 @@ defmodule Tail do
 
 	use GenServer
 
-  @type state :: {term, ([String.t]->), Integer, any, Integer}
+  @type state :: {File.Stream.t, ([String.t]->), integer, term, integer}
 
 	@doc """
 	Public interface. Starts a Tail Genserver for the given file, function, and interval (in ms)
 	"""
-  @spec start_link(String.t, ([String.t]->), Integer) :: GenServer.on_start
+  @spec start_link(String.t, ([String.t]->), integer) :: GenServer.on_start
 	def start_link(file, fun, interval \\ 1000) do
 		GenServer.start_link(__MODULE__, {file, fun, interval})
 	end
@@ -34,7 +34,7 @@ defmodule Tail do
 	end
 
 	#init callback. Starts the check loop by casting :check to self and then returns the initial state
-  @spec init({String.t, ([String.t]->), Integer}) :: {:ok, state}
+  @spec init({String.t, ([String.t]->), integer}) :: {:ok, state}
 	def init({file, fun, interval}) do
 		stream = File.stream!(file)
 		GenServer.cast(self, :check)
@@ -53,7 +53,7 @@ defmodule Tail do
 	end
 
 	#Handles :kill call. Checks for any final lines before stopping the genserver
-  @spec handle_call(:kill, {pid, reference}, state) :: {:stop, :normal, :ok, state}
+  @spec handle_call(:kill, {pid, term}, state) :: {:stop, :normal, :ok, state}
 	def handle_call(:kill, _from, {stream, fun, interval, last_modified, position}) do
 		{last_modified, position} = check_for_lines(stream, fun, last_modified, position)
     {:stop, :normal, :ok, {stream, fun, interval, last_modified, position}}
@@ -63,7 +63,7 @@ defmodule Tail do
 	#file will appear eventually. If the file hasn't been modified since last time, it also returns the current state.
 	#If the file has been modified, Stream.drop(position) skips lines previously read, then Enum.each gathers the new lines.
 	#Returns the new last_modified and position.
-  @spec check_for_lines(term, ([String.t]->), term, Integer) :: {term, Integer}
+  @spec check_for_lines(File.Stream.t, ([String.t]->), term, integer) :: {term, integer}
 	defp check_for_lines(stream, fun, last_modified, position) do
 		cond do
 			!File.exists?(stream.path) ->

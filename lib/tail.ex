@@ -15,7 +15,7 @@ defmodule Tail do
 
   use GenServer
 
-  @type state :: {File.Stream.t(), ([String.t()] -> nil), integer, term, integer}
+  @type state :: {File.Stream.t(), ([String.t()] -> nil), integer, term, integer, integer}
 
   @doc """
   Public interface. Starts a Tail Genserver for the given file, function, and interval (in ms)
@@ -38,40 +38,36 @@ defmodule Tail do
   def init({file, fun, interval}) do
     stream = File.stream!(file)
     GenServer.cast(self(), :check)
-    {:ok, {stream, fun, interval, nil, 0}}
+    {:ok, {stream, fun, interval, nil, 0, 0}}
   end
 
   # Main loop. Calls check_for_lines, sleeps, then continues the loop by casting :check to self
   # and returning with the (possibly updated) last_modified and position
   @spec handle_cast(:check, state) :: {:noreply, state}
-  def handle_cast(:check, {stream, fun, interval, last_modified, position}) do
-    {last_modified, position} = check_for_lines(stream, fun, last_modified, position)
+  def handle_cast(:check, state = {_stream, _fun, interval, _last_modified, _position, _size}) do
+    state = check_for_lines(state)
     :timer.sleep(interval)
     GenServer.cast(self(), :check)
-    {:noreply, {stream, fun, interval, last_modified, position}}
+    {:noreply, state}
   end
 
   # Handles :kill call. Checks for any final lines before stopping the genserver
   @spec handle_call(:kill, {pid, term}, state) :: {:stop, :normal, :ok, state}
-  def handle_call(:kill, _from, {stream, fun, interval, last_modified, position}) do
-    {last_modified, position} = check_for_lines(stream, fun, last_modified, position)
-    {:stop, :normal, :ok, {stream, fun, interval, last_modified, position}}
+  def handle_call(:kill, _from, state) do
+    state = check_for_lines(state)
+    {:stop, :normal, :ok, state}
   end
 
   # Implementation of line checking. If the file doesn't exist, it simply returns the current state, assuming the
   # file will appear eventually. If the file hasn't been modified since last time, it also returns the current state.
   # If the file has been modified, Stream.drop(position) skips lines previously read, then Enum.each gathers the new lines.
   # Returns the new last_modified and position.
-  @spec check_for_lines(File.Stream.t(), ([String.t()] -> nil), term, integer) :: {term, integer}
-  defp check_for_lines(stream, fun, last_modified, position) do
-    cond do
-      !File.exists?(stream.path) ->
-        {last_modified, position}
-
-      File.stat!(stream.path).mtime == last_modified ->
-        {last_modified, position}
-
-      true ->
+  @spec check_for_lines(state) :: state
+  defp check_for_lines(state = {stream, fun, interval, last_modified, position, size}) do
+    with {:exists, true} <- {:exists, File.exists?(stream.path)},
+      {:ok, stat} <- File.stat(stream.path),
+      {:mtime, true} <- {:mtime, stat.mtime != last_modified},
+      {:size, true} <- {:size, stat.size >= size} do
         lines =
           stream
           |> Stream.drop(position)
@@ -81,7 +77,12 @@ defmodule Tail do
           fun.(lines)
         end
 
-        {File.stat!(stream.path).mtime, position + length(lines)}
+        {stream, fun, interval, stat.mtime, position + length(lines), stat.size}
+    else
+      {:exists, false} -> {File.stream!(stream.path), fun, interval, last_modified, 0, 0}
+      {:error, _} -> {File.stream!(stream.path), fun, interval, last_modified, 0, 0}
+      {:size, false} -> {File.stream!(stream.path), fun, interval, last_modified, 0, 0}
+      {:mtime, false} -> state
     end
   end
 end

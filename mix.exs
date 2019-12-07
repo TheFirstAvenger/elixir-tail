@@ -13,10 +13,10 @@ defmodule Tail.Mixfile do
       dialyzer: [
         ignore_warnings: ".dialyzer_ignore.exs",
         list_unused_filters: true,
-        plt_file: {:no_warn, "tail.plt"}
+        plt_file: {:no_warn, "priv/plts/tail.plt"}
       ],
       app: :tail,
-      version: "1.1.0",
+      version: "1.1.1",
       elixir: "~> 1.6",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -25,7 +25,7 @@ defmodule Tail.Mixfile do
       package: package(),
       docs: [
         readme: "README.md",
-        main: "README",
+        main: "Tail",
         source_url: "https://github.com/TheFirstAvenger/elixir-tail.git"
       ]
     ]

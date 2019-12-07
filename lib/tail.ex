@@ -33,7 +33,9 @@ defmodule Tail do
     GenServer.call(pid, :kill)
   end
 
-  # init callback. Starts the check loop by casting :check to self and then returns the initial state
+  @doc """
+  Init callback. Starts the check loop by casting :check to self and then returns the initial state
+  """
   @spec init({String.t(), ([String.t()] -> nil), integer}) :: {:ok, state}
   def init({file, fun, interval}) do
     stream = File.stream!(file)
@@ -41,8 +43,10 @@ defmodule Tail do
     {:ok, {stream, fun, interval, nil, 0, 0}}
   end
 
-  # Main loop. Calls check_for_lines, sleeps, then continues the loop by casting :check to self
-  # and returning with the (possibly updated) last_modified and position
+  @doc """
+  Main loop. Calls check_for_lines, sleeps, then continues the loop by casting :check to self
+  and returning with the (possibly updated) last_modified and position
+  """
   @spec handle_cast(:check, state) :: {:noreply, state}
   def handle_cast(:check, state = {_stream, _fun, interval, _last_modified, _position, _size}) do
     state = check_for_lines(state)
@@ -51,7 +55,9 @@ defmodule Tail do
     {:noreply, state}
   end
 
-  # Handles :kill call. Checks for any final lines before stopping the genserver
+  @doc """
+  Handles :kill call. Checks for any final lines before stopping the genserver
+  """
   @spec handle_call(:kill, {pid, term}, state) :: {:stop, :normal, :ok, state}
   def handle_call(:kill, _from, state) do
     state = check_for_lines(state)

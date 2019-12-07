@@ -4,3 +4,7 @@ erl_crash.dump
 *.ez
 *.sublime-workspace
 /doc
+
+# dialyzer plt
+tail.plt
+tail.plt.hash

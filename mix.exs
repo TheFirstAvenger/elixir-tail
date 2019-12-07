@@ -16,7 +16,7 @@ defmodule Tail.Mixfile do
         plt_file: {:no_warn, "tail.plt"}
       ],
       app: :tail,
-      version: "1.0.1",
+      version: "1.1.0",
       elixir: "~> 1.6",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,

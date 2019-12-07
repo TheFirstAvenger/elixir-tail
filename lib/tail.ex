@@ -65,19 +65,19 @@ defmodule Tail do
   @spec check_for_lines(state) :: state
   defp check_for_lines(state = {stream, fun, interval, last_modified, position, size}) do
     with {:exists, true} <- {:exists, File.exists?(stream.path)},
-      {:ok, stat} <- File.stat(stream.path),
-      {:mtime, true} <- {:mtime, stat.mtime != last_modified},
-      {:size, true} <- {:size, stat.size >= size} do
-        lines =
-          stream
-          |> Stream.drop(position)
-          |> Enum.into([])
+         {:ok, stat} <- File.stat(stream.path),
+         {:mtime, true} <- {:mtime, stat.mtime != last_modified},
+         {:size, true} <- {:size, stat.size >= size} do
+      lines =
+        stream
+        |> Stream.drop(position)
+        |> Enum.into([])
 
-        if length(lines) > 0 do
-          fun.(lines)
-        end
+      if length(lines) > 0 do
+        fun.(lines)
+      end
 
-        {stream, fun, interval, stat.mtime, position + length(lines), stat.size}
+      {stream, fun, interval, stat.mtime, position + length(lines), stat.size}
     else
       {:exists, false} -> {File.stream!(stream.path), fun, interval, last_modified, 0, 0}
       {:error, _} -> {File.stream!(stream.path), fun, interval, last_modified, 0, 0}

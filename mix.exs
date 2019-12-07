@@ -3,6 +3,18 @@ defmodule Tail.Mixfile do
 
   def project do
     [
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ],
+      dialyzer: [
+        ignore_warnings: ".dialyzer_ignore.exs",
+        list_unused_filters: true,
+        plt_file: {:no_warn, "tail.plt"}
+      ],
       app: :tail,
       version: "1.0.1",
       elixir: "~> 1.6",
@@ -28,17 +40,15 @@ defmodule Tail.Mixfile do
     ]
   end
 
-  # Dependencies can be Hex packages:
-  #
-  #   {:mydep, "~> 0.3.0"}
-  #
-  # Or git/path repositories:
-  #
-  #   {:mydep, git: "https://github.com/elixir-lang/mydep.git", tag: "0.1.0"}
-  #
-  # Type `mix help deps` for more examples and options
   defp deps do
-    [{:earmark, "~> 0.1", only: :dev}, {:ex_doc, "~> 0.7", only: :dev}]
+    [
+      {:excoveralls, "~> 0.12.1", only: :test},
+      {:credo, "~> 1.2.0-rc1", only: [:dev, :test], runtime: false},
+      {:mix_test_watch, "~> 1.0.2", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.0.0-rc.7", only: [:dev, :test], runtime: false},
+      {:earmark, "~> 1.4.3", only: :dev},
+      {:ex_doc, "~> 0.21.2", only: :dev}
+    ]
   end
 
   defp description do
